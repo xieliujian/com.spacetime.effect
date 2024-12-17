@@ -1,13 +1,13 @@
 
 # SunShaft光线
 
-![github](https://github.com/xieliujian/UnityDemo_SunShaft/blob/main/Video/1.png?raw=true)
+![github](https://github.com/xieliujian/com.spacetime.effect/blob/main/Doc/SunShaft/Video/1.png?raw=true)
 
 ## 第一步
 
 采样光线颜色
 
-![github](https://github.com/xieliujian/UnityDemo_SunShaft/blob/main/Video/2.png?raw=true)
+![github](https://github.com/xieliujian/com.spacetime.effect/blob/main/Doc/SunShaft/Video/2.png?raw=true)
 
 Shader片段
 
@@ -47,7 +47,7 @@ float4 frag(Varyings input) : SV_Target
 
 径向模糊
 
-![github](https://github.com/xieliujian/UnityDemo_SunShaft/blob/main/Video/3.png?raw=true)
+![github](https://github.com/xieliujian/com.spacetime.effect/blob/main/Doc/SunShaft/Video/3.png?raw=true)
 
 Shader片段
 
@@ -102,7 +102,7 @@ float4 frag(Varyings input) : SV_Target
 
 和场景图混合
 
-![github](https://github.com/xieliujian/UnityDemo_SunShaft/blob/main/Video/4.png?raw=true)
+![github](https://github.com/xieliujian/com.spacetime.effect/blob/main/Doc/SunShaft/Video/4.png?raw=true)
 
 Shader片段
 

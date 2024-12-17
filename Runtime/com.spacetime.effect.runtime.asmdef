@@ -1,0 +1,18 @@
+{
+    "name": "com.spacetime.effect.runtime",
+    "rootNamespace": "",
+    "references": [
+        "GUID:bf68ccc6d18ca9a43a94ec13168b65cf",
+        "GUID:df380645f10b7bc4b97d4f5eb6303d95",
+        "GUID:15fc0a57446b3144c949da3e2b9737a9"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

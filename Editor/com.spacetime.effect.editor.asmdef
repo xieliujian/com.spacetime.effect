@@ -2,7 +2,8 @@
     "name": "com.spacetime.effect.editor",
     "rootNamespace": "",
     "references": [
-        "GUID:bf68ccc6d18ca9a43a94ec13168b65cf"
+        "GUID:bf68ccc6d18ca9a43a94ec13168b65cf",
+        "GUID:10f4c280f3b18ac48b8e076b372a09ac"
     ],
     "includePlatforms": [
         "Editor"

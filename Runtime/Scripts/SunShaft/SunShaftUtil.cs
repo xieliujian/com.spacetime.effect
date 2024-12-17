@@ -1,7 +1,7 @@
 ﻿
 using UnityEngine;
 
-namespace ST.Effect.URP.SunShaft
+namespace ST.Effect.URP
 {
     /// <summary>
     /// 

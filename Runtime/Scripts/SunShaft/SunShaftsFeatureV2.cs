@@ -13,18 +13,17 @@ namespace ST.Effect.URP
         /// <summary>
         /// 
         /// </summary>
-        public static readonly string BUILD_SKY_SHADER_NAME = "GTM/PostProcess/SunShaft/BuildSkyForBlurShader";
+        public static readonly string BUILD_SKY_SHADER_NAME = "SpaceTime/PostProcess/SunShaft/BuildSkyForBlurShader";
 
         /// <summary>
         /// 
         /// </summary>
-        public static readonly string BLUR_SHADER_NAME = "GTM/PostProcess/SunShaft/DirectionalBlurShader";
+        public static readonly string BLUR_SHADER_NAME = "SpaceTime/PostProcess/SunShaft/DirectionalBlurShader";
 
         /// <summary>
         /// 
         /// </summary>
-        public static readonly string FINAL_BLEND_SHADER_NAME = "GTM/PostProcess/SunShaft/FinalBlendShader";
-        //public static readonly string FINAL_BLEND_SHADER_NAME = "LingRen/Urp/PPExtensions/FinalBlendShader";
+        public static readonly string FINAL_BLEND_SHADER_NAME = "SpaceTime/PostProcess/SunShaft/FinalBlendShader";
 
         /// <summary>
         /// 

@@ -14,10 +14,10 @@ namespace ST.Effect
         /// <summary>
         /// 
         /// </summary>
-        static string _UseBoxCubeRefl = "_UseBoxCubeRefl";
-        static string _BoxCubeReflCenter = "_BoxCubeReflCenter";
-        static string _BoxCubeReflBoxMin = "_BoxCubeReflBoxMin";
-        static string _BoxCubeReflBoxMax = "_BoxCubeReflBoxMax";
+        static string s_UseBoxCubeRefl = "_UseBoxCubeRefl";
+        static string s_BoxCubeReflCenter = "_BoxCubeReflCenter";
+        static string s_BoxCubeReflBoxMin = "_BoxCubeReflBoxMin";
+        static string s_BoxCubeReflBoxMax = "_BoxCubeReflBoxMax";
 
         /// <summary>
         /// 
@@ -73,33 +73,27 @@ namespace ST.Effect
 
                 bool dirty = false;
 
-                if (mat.HasProperty(_UseBoxCubeRefl))
+                if (mat.HasProperty(s_UseBoxCubeRefl))
                 {
-                    mat.SetFloat(_UseBoxCubeRefl, 1);
+                    mat.SetFloat(s_UseBoxCubeRefl, 1);
                     dirty = true;
                 }
 
-                if (mat.HasProperty(_BoxCubeReflCenter))
+                if (mat.HasProperty(s_BoxCubeReflCenter))
                 {
-                    mat.SetVector(_BoxCubeReflCenter, paremScript.reflProbeCenter);
+                    mat.SetVector(s_BoxCubeReflCenter, paremScript.reflProbeCenter);
                     dirty = true;
                 }
 
-                if (mat.HasProperty(_BoxCubeReflCenter))
+                if (mat.HasProperty(s_BoxCubeReflBoxMin))
                 {
-                    mat.SetVector(_BoxCubeReflCenter, paremScript.reflProbeCenter);
+                    mat.SetVector(s_BoxCubeReflBoxMin, paremScript.reflProbeBoxMin);
                     dirty = true;
                 }
 
-                if (mat.HasProperty(_BoxCubeReflBoxMin))
+                if (mat.HasProperty(s_BoxCubeReflBoxMax))
                 {
-                    mat.SetVector(_BoxCubeReflBoxMin, paremScript.reflProbeBoxMin);
-                    dirty = true;
-                }
-
-                if (mat.HasProperty(_BoxCubeReflBoxMax))
-                {
-                    mat.SetVector(_BoxCubeReflBoxMax, paremScript.reflProbeBoxMax);
+                    mat.SetVector(s_BoxCubeReflBoxMax, paremScript.reflProbeBoxMax);
                     dirty = true;
                 }
 

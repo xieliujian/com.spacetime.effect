@@ -56,26 +56,26 @@ Shader "SpaceTime/Scene/BoxCubeRefl"
             sampler2D _MainTex;
             samplerCUBE _ReflectionCube;
 
-            half3 BoxProjectedCubemapDirection(half3 worldRefl, float3 worldPos, float4 cubemapCenter, float4 boxMin, float4 boxMax)
+            half3 BoxProjectedCubemapDirectionCustom(half3 worldRefl, float3 worldPos, float4 cubemapCenter, float4 boxMin, float4 boxMax)
             {
-                // nrdir∂‘”¶”⁄Œ“√«µƒd
+                // nrdirÂØπÂ∫î‰∫éÊàë‰ª¨ÁöÑd
                 half3 nrdir = normalize(worldRefl);
 
                 half3 rbmax = (boxMax.xyz - worldPos) / nrdir;
                 half3 rbmin = (boxMin.xyz - worldPos) / nrdir;
 
-                // rbminmax∂‘”¶t
+                // rbminmaxÂØπÂ∫ît
                 //half3 rbminmax = (nrdir > 0.0f) ? rbmax : rbmin;
                 half3 boolDir = (nrdir > 0.0f);
                 half3 rbminmax = boolDir * rbmax + (1 - boolDir) * rbmin;
 
-                // fa∂‘”¶collisionDist
+                // faÂØπÂ∫îcollisionDist
                 half fa = min(min(rbminmax.x, rbminmax.y), rbminmax.z);
 
                 worldPos -= cubemapCenter.xyz;
 
-                // œ¬√Êµƒ worldPos ∂‘”¶ localPosInProbe 
-                // nrdir * fa µ»”⁄ collisionDir
+                // ‰∏ãÈù¢ÁöÑ worldPos ÂØπÂ∫î localPosInProbe 
+                // nrdir * fa Á≠â‰∫é collisionDir
                 worldRefl = worldPos + nrdir * fa;
 
                 return worldRefl;
@@ -101,7 +101,7 @@ Shader "SpaceTime/Scene/BoxCubeRefl"
                 half3 viewDirectionWS = (_WorldSpaceCameraPos - worldPos);
                 half3 reflectVector = reflect(-viewDirectionWS, float3(0, 1, 0));
 
-                half3 realReflUV = BoxProjectedCubemapDirection(reflectVector, worldPos, _BoxCubeReflCenter, _BoxCubeReflBoxMin, _BoxCubeReflBoxMax);
+                half3 realReflUV = BoxProjectedCubemapDirectionCustom(reflectVector, worldPos, _BoxCubeReflCenter, _BoxCubeReflBoxMin, _BoxCubeReflBoxMax);
 
                 half4 reflColor = texCUBElod(_ReflectionCube, float4(realReflUV, 0));
 

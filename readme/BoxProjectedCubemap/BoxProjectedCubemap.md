@@ -4,6 +4,11 @@
 
 适用于矩形场景的 Cubemap 盒子投影效果，能对墙壁上的门、窗、画等物件产生正确的反射投影。
 
+## 示例与在线体验
+
+- **Unity 示例工程（Demo）**：[com.spacetime.effect.sample.boxprojectedcubemap](https://github.com/xieliujian/com.spacetime.effect.sample.boxprojectedcubemap)
+- **Web 在线预览（WebGL）**：[Box Projected Cubemap](https://xieliujian.github.io/xieliujian_page/spacetime/effect/boxprojectedcubemap/)
+
 ---
 
 ## 展示效果

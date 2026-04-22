@@ -14,14 +14,6 @@ namespace ST.Effect
         /// <summary>
         /// 
         /// </summary>
-        static string s_UseBoxCubeRefl = "_UseBoxCubeRefl";
-        static string s_BoxCubeReflCenter = "_BoxCubeReflCenter";
-        static string s_BoxCubeReflBoxMin = "_BoxCubeReflBoxMin";
-        static string s_BoxCubeReflBoxMax = "_BoxCubeReflBoxMax";
-
-        /// <summary>
-        /// 
-        /// </summary>
         static Component[] s_CopiedComponents;
 
         /// <summary>
@@ -73,27 +65,27 @@ namespace ST.Effect
 
                 bool dirty = false;
 
-                if (mat.HasProperty(s_UseBoxCubeRefl))
+                if (mat.HasProperty(BoxProjectedCubemapDefine.s_Shader_BoxCubeRefl_UseBoxCubeRefl_PropId))
                 {
-                    mat.SetFloat(s_UseBoxCubeRefl, 1);
+                    mat.SetFloat(BoxProjectedCubemapDefine.s_Shader_BoxCubeRefl_UseBoxCubeRefl_PropId, 1);
                     dirty = true;
                 }
 
-                if (mat.HasProperty(s_BoxCubeReflCenter))
+                if (mat.HasProperty(BoxProjectedCubemapDefine.s_Shader_BoxCubeRefl_Center_PropId))
                 {
-                    mat.SetVector(s_BoxCubeReflCenter, paremScript.reflProbeCenter);
+                    mat.SetVector(BoxProjectedCubemapDefine.s_Shader_BoxCubeRefl_Center_PropId, paremScript.reflProbeCenter);
                     dirty = true;
                 }
 
-                if (mat.HasProperty(s_BoxCubeReflBoxMin))
+                if (mat.HasProperty(BoxProjectedCubemapDefine.s_Shader_BoxCubeRefl_BoxMin_PropId))
                 {
-                    mat.SetVector(s_BoxCubeReflBoxMin, paremScript.reflProbeBoxMin);
+                    mat.SetVector(BoxProjectedCubemapDefine.s_Shader_BoxCubeRefl_BoxMin_PropId, paremScript.reflProbeBoxMin);
                     dirty = true;
                 }
 
-                if (mat.HasProperty(s_BoxCubeReflBoxMax))
+                if (mat.HasProperty(BoxProjectedCubemapDefine.s_Shader_BoxCubeRefl_BoxMax_PropId))
                 {
-                    mat.SetVector(s_BoxCubeReflBoxMax, paremScript.reflProbeBoxMax);
+                    mat.SetVector(BoxProjectedCubemapDefine.s_Shader_BoxCubeRefl_BoxMax_PropId, paremScript.reflProbeBoxMax);
                     dirty = true;
                 }
 

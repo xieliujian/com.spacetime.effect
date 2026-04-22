@@ -8,7 +8,7 @@
 
 ## 展示效果
 
-![效果预览](https://github.com/xieliujian/com.spacetime.effect/blob/main/Doc/BoxProjectedCubemap/Video/BoxProjectedCubemap.png?raw=true)
+![效果预览](Video/BoxProjectedCubemap.png)
 
 ---
 
@@ -18,7 +18,7 @@
 
 在场景中创建一个 `ReflectionProbe`，包裹住整个场景，拍照生成 CubeMap。
 
-![Demo 示例](https://github.com/xieliujian/com.spacetime.effect/blob/main/Doc/BoxProjectedCubemap/Video/Demo1.png?raw=true)
+![Demo 示例](Video/Demo1.png)
 
 ### 第二步：复制 ReflectionProbe 参数
 

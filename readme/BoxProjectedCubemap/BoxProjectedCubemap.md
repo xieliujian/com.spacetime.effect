@@ -63,7 +63,7 @@ GameObject > BoxProjectedCubemapDirection_Paste
 
 ## Shader 核心算法
 
-`BoxProjectedCubemapDirection` 函数将反射向量从视角空间修正为正确的盒子投影坐标：
+`BoxProjectedCubemapDirectionCustom` 函数将反射向量从视角空间修正为正确的盒子投影坐标：
 
 ```hlsl
 // worldRefl    — 反射向量
@@ -73,7 +73,7 @@ GameObject > BoxProjectedCubemapDirection_Paste
 // boxMax       — 包围盒最大点
 // 返回值       — 修正后的投影坐标
 
-half3 BoxProjectedCubemapDirection(half3 worldRefl, float3 worldPos,
+half3 BoxProjectedCubemapDirectionCustom(half3 worldRefl, float3 worldPos,
     float4 cubemapCenter, float4 boxMin, float4 boxMax)
 {
     half3 nrdir = normalize(worldRefl);

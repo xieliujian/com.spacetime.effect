@@ -1,6 +1,6 @@
 # 盒子投影 Cubemap
 
-[← 返回主页](../../README.md)
+[← 返回主页](../../README.md) · [BoxProjectedCubemapDirectionCustom 原理分析](BoxProjectedCubemapDirectionCustom.md)
 
 适用于矩形场景的 Cubemap 盒子投影效果，能对墙壁上的门、窗、画等物件产生正确的反射投影。
 
@@ -63,7 +63,7 @@ GameObject > BoxProjectedCubemapDirection_Paste
 
 ## Shader 核心算法
 
-`BoxProjectedCubemapDirectionCustom` 函数将反射向量从视角空间修正为正确的盒子投影坐标：
+`BoxProjectedCubemapDirectionCustom` 将反射方向 **按 AABB 盒体** 修正，得到用于 `texCUBE` 的采样方向；**逐步数学含义与使用假设** 见同目录文档：[BoxProjectedCubemapDirectionCustom 原理分析](BoxProjectedCubemapDirectionCustom.md)。
 
 ```hlsl
 // worldRefl    — 反射向量
@@ -106,8 +106,9 @@ half3 BoxProjectedCubemapDirectionCustom(half3 worldRefl, float3 worldPos,
 
 ## 参考资料
 
+- [BoxProjectedCubemapDirectionCustom 原理分析](BoxProjectedCubemapDirectionCustom.md)（算法逐步说明）
 - [Catlike Coding - Rendering Part 8（第三章）](https://catlikecoding.com/unity/tutorials/rendering/part-8/)
 
 ---
 
-[← 返回主页](../../README.md)
+[← 返回主页](../../README.md) · [BoxProjectedCubemapDirectionCustom 原理](BoxProjectedCubemapDirectionCustom.md)

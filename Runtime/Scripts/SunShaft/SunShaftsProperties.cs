@@ -13,16 +13,6 @@ namespace ST.Effect.URP
     public class SunShaftsProperties
     {
         /// <summary>
-        /// 摄像机与灯光的角度
-        /// </summary>
-        const float CAN_VISIBLE_RENDER_LIGHT_ANGLE = 30.0f;
-
-        /// <summary>
-        /// 摄像机与向上方向向量的角度
-        /// </summary>
-        const float CAN_VISIBLE_RENDER_UP_ANGLE = 70.0f;
-
-        /// <summary>
         /// 
         /// </summary>
         [HideInInspector]
@@ -239,9 +229,9 @@ namespace ST.Effect.URP
         /// </summary>
         public void CacheAllMaterial()
         {
-            SunShaftUtil.GetMaterial(ref buildSkyMaterial, SunShaftsFeatureV2.BUILD_SKY_SHADER_NAME);
-            SunShaftUtil.GetMaterial(ref blurMaterial, SunShaftsFeatureV2.BLUR_SHADER_NAME);
-            SunShaftUtil.GetMaterial(ref finalBlendMaterial, SunShaftsFeatureV2.FINAL_BLEND_SHADER_NAME);
+            SunShaftUtil.GetMaterial(ref buildSkyMaterial, SunShaftsDefine.s_BuildSkyShaderName);
+            SunShaftUtil.GetMaterial(ref blurMaterial, SunShaftsDefine.s_BlurShaderName);
+            SunShaftUtil.GetMaterial(ref finalBlendMaterial, SunShaftsDefine.s_FinalBlendShaderName);
         }
 
         /// <summary>
@@ -334,8 +324,8 @@ namespace ST.Effect.URP
             float angle1 = Mathf.Abs(Vector3.Angle(-camforward, lightdir));
             float angle2 = Mathf.Abs(Vector3.Angle(camforward, Vector3.up));
 
-            bool isInAngle1 = angle1 <= CAN_VISIBLE_RENDER_LIGHT_ANGLE;
-            bool isInAngle2 = angle2 <= CAN_VISIBLE_RENDER_UP_ANGLE;
+            bool isInAngle1 = angle1 <= SunShaftsDefine.s_CanVisibleRenderLightAngle;
+            bool isInAngle2 = angle2 <= SunShaftsDefine.s_CanVisibleRenderUpAngle;
             return isInAngle1 || isInAngle2;
         }
     }

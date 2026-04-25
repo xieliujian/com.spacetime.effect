@@ -12,51 +12,6 @@ namespace ST.Effect.URP
         /// <summary>
         /// 
         /// </summary>
-        private static readonly int SunPosition = Shader.PropertyToID("_SunPosition");
-
-        /// <summary>
-        /// 
-        /// </summary>
-        private static readonly int BlurStep = Shader.PropertyToID("_BlurStep");
-        
-        /// <summary>
-        /// 
-        /// </summary>
-        private static readonly int Intensity = Shader.PropertyToID("_Intensity");
-
-        /// <summary>
-        /// 
-        /// </summary>
-        private static readonly int ShaftsColor = Shader.PropertyToID("_ShaftsColor");
-
-        /// <summary>
-        /// 
-        /// </summary>
-        private static readonly int SunThresholdSky = Shader.PropertyToID("_SunThresholdSky");
-
-        /// <summary>
-        /// 
-        /// </summary>
-        private static readonly int SkyNoiseScale = Shader.PropertyToID("_SkyNoiseScale");
-
-        /// <summary>
-        /// 
-        /// </summary>
-        private static readonly int UseStencilMaskTex = Shader.PropertyToID("_UseStencilMaskTex");
-
-        /// <summary>
-        /// 
-        /// </summary>
-        public static readonly int stencilMaskTex = Shader.PropertyToID("_StencilMaskTex");
-
-        /// <summary>
-        /// 
-        /// </summary>
-        const string COMMAND_BUFFER_NAME = "ShaftsRendering";
-
-        /// <summary>
-        /// 
-        /// </summary>
         SunShaftsProperties m_Props;
 
         /// <summary>
@@ -169,7 +124,7 @@ namespace ST.Effect.URP
             if (!isallmatload)
                 return;
 
-            var cmd = CommandBufferPool.Get(COMMAND_BUFFER_NAME);
+            var cmd = CommandBufferPool.Get(SunShaftsDefine.s_CommandBufferName);
             cmd.Clear();
 
             var cameraTargetDescriptor = ModifyCameraTargetDescriptor(renderingData.cameraData.cameraTargetDescriptor,
@@ -178,38 +133,38 @@ namespace ST.Effect.URP
             InitTmpTextures(cmd, cameraTargetDescriptor);
 
             //2. Blit sky cutted off by geometry
-            m_Props.buildSkyMaterial.SetVector(SunPosition, sunScreenPoint);
-            m_Props.buildSkyMaterial.SetFloat(SunThresholdSky, m_Props.sunThresholdSky);
-            m_Props.buildSkyMaterial.SetFloat(SkyNoiseScale, m_Props.skyNoiseScale);
+            m_Props.buildSkyMaterial.SetVector(SunShaftsDefine.s_Shader_SunPosition_PropId, sunScreenPoint);
+            m_Props.buildSkyMaterial.SetFloat(SunShaftsDefine.s_Shader_SunThresholdSky_PropId, m_Props.sunThresholdSky);
+            m_Props.buildSkyMaterial.SetFloat(SunShaftsDefine.s_Shader_SkyNoiseScale_PropId, m_Props.skyNoiseScale);
             Blit(cmd, m_Source, m_TmpBlurTarget1.Identifier(), m_Props.buildSkyMaterial);
 
             //2. Blur iteratively
             var radius = m_Props.blurRadius / m_Props.radiusDivider;
             const int shaderBlurIterationsCount = 6;
             var iterationScaler = (float)shaderBlurIterationsCount / m_Props.radiusDivider;
-            m_Props.blurMaterial.SetVector(SunPosition, sunScreenPoint);
+            m_Props.blurMaterial.SetVector(SunShaftsDefine.s_Shader_SunPosition_PropId, sunScreenPoint);
 
             for (int i = 0; i < m_Props.blurStepsCount; i++)
             {
-                m_Props.blurMaterial.SetFloat(BlurStep, radius);
+                m_Props.blurMaterial.SetFloat(SunShaftsDefine.s_Shader_BlurStep_PropId, radius);
                 Blit(cmd, m_TmpBlurTarget1.Identifier(), m_TmpBlurTarget2.Identifier(), m_Props.blurMaterial);
 
                 radius = m_Props.blurRadius * (i * 2f + 1f) * iterationScaler;
-                m_Props.blurMaterial.SetFloat(BlurStep, radius);
+                m_Props.blurMaterial.SetFloat(SunShaftsDefine.s_Shader_BlurStep_PropId, radius);
                 Blit(cmd, m_TmpBlurTarget2.Identifier(), m_TmpBlurTarget1.Identifier(), m_Props.blurMaterial);
 
                 radius = m_Props.blurRadius * (i * 2f + 2f) * iterationScaler;
             }
 
-            m_Props.finalBlendMaterial.SetFloat(Intensity, m_Props.intensity);
+            m_Props.finalBlendMaterial.SetFloat(SunShaftsDefine.s_Shader_Intensity_PropId, m_Props.intensity);
             var shaftsColor = m_Props.useSunLightColor && RenderSettings.sun ? RenderSettings.sun.color : m_Props.shaftsColor;
-            m_Props.finalBlendMaterial.SetColor(ShaftsColor, shaftsColor);
+            m_Props.finalBlendMaterial.SetColor(SunShaftsDefine.s_Shader_ShaftsColor_PropId, shaftsColor);
 
             // 设置是否使用Mask Tex
-            m_Props.finalBlendMaterial.SetFloat(UseStencilMaskTex, m_Props.useStencilMaskTex ? 1f : 0f);
+            m_Props.finalBlendMaterial.SetFloat(SunShaftsDefine.s_Shader_UseStencilMaskTex_PropId, m_Props.useStencilMaskTex ? 1f : 0f);
 
             // 设置角色模板材质
-            cmd.SetGlobalTexture(stencilMaskTex, stencilMaskTex);
+            cmd.SetGlobalTexture(SunShaftsDefine.s_Shader_StencilMaskTex_PropId, SunShaftsDefine.s_Shader_StencilMaskTex_PropId);
 
             if (m_Destination == RenderTargetHandle.CameraTarget)
             {

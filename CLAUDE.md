@@ -15,8 +15,10 @@ com.spacetime.effect/
 ├── Runtime/
 │   └── Scripts/
 │       ├── BoxProjectedCubemap/     — 盒子投影运行时
-│       │   └── ReflectionProbeParam.cs
+│       │   ├── BoxProjectedCubemapDefine.cs  Shader 属性名常量
+│       │   └── ReflectionProbeParam.cs       探针包围盒同步组件
 │       └── SunShaft/                — 太阳光轴运行时
+│           ├── SunShaftsDefine.cs       Shader 名称/属性 ID/角度常量
 │           ├── SunShafts.cs             VolumeComponent 参数定义
 │           ├── SunShaftsFeatureV2.cs    ScriptableRendererFeature 入口
 │           ├── SunShaftsPass.cs         ScriptableRenderPass 渲染实现
@@ -25,10 +27,18 @@ com.spacetime.effect/
 ├── Editor/
 │   └── Scripts/
 │       └── BoxProjectedCubemap/
-│           └── BoxProjectedCubemapTool.cs  编辑器右键菜单工具
+│           └── BoxProjectedCubemapTool.cs  编辑器右键菜单工具（类名 BoxProjectedCubemapDirection）
 ├── Shaders/
 │   ├── BoxProjectedCubemap/         — 盒子投影 Shader
+│   │   ├── BoxCubeRefl.shader           主 Shader 入口
+│   │   ├── BoxCubeReflInclude.hlsl      CBUFFER / 采样器声明
+│   │   ├── BoxCubeReflUtils.hlsl        盒体射线求交函数
+│   │   └── BoxCubeReflForwardPass.hlsl  顶点/片元着色器
 │   ├── SunShaft/                    — 太阳光轴三步 Pass Shader
+│   │   ├── BuildSkyForBlurShader.shader
+│   │   ├── DirectionalBlurShader.shader
+│   │   ├── FinalBlendShader.shader
+│   │   └── SimpleNoise.hlsl             噪声函数库
 │   └── Shaders.cs                   命名空间占位符
 └── readme/
     ├── BoxProjectedCubemap/BoxProjectedCubemap.md
@@ -50,15 +60,38 @@ com.spacetime.effect/
 用于矩形场景的精确 Cubemap 反射投影。
 
 **运行时**
-- `ReflectionProbeParam`（`[ExecuteInEditMode]` MonoBehaviour）挂在 ReflectionProbe 所在 GameObject 上，每帧自动将包围盒的 `center` / `min` / `max` 同步到公共字段。
+- `ReflectionProbeParam`（`[ExecuteInEditMode]` MonoBehaviour）挂在 ReflectionProbe 所在 GameObject 上，每帧自动将包围盒的 `center` / `min` / `max` 同步到三个公共字段（`reflProbeCenter` / `reflProbeBoxMin` / `reflProbeBoxMax`）。
+- `BoxProjectedCubemapDefine`（静态类）集中定义 Shader 属性名字符串常量，供运行时与编辑器工具共用，避免散落的魔法字符串：
 
-**编辑器工具**（`BoxProjectedCubemapTool`）
-- `GameObject > BoxProjectedCubemapDirection_Copy` — 记录选中 GameObject 上的 `ReflectionProbeParam` 组件。
-- `GameObject > BoxProjectedCubemapDirection_Paste` — 将记录的包围盒数据写入选中物件的 `sharedMaterial`，目标属性：`_UseBoxCubeRefl` / `_BoxCubeReflCenter` / `_BoxCubeReflBoxMin` / `_BoxCubeReflBoxMax`。
+```csharp
+BoxProjectedCubemapDefine.s_Shader_BoxCubeRefl_UseBoxCubeRefl_PropId  // "_UseBoxCubeRefl"
+BoxProjectedCubemapDefine.s_Shader_BoxCubeRefl_Center_PropId          // "_BoxCubeReflCenter"
+BoxProjectedCubemapDefine.s_Shader_BoxCubeRefl_BoxMin_PropId          // "_BoxCubeReflBoxMin"
+BoxProjectedCubemapDefine.s_Shader_BoxCubeRefl_BoxMax_PropId          // "_BoxCubeReflBoxMax"
+```
+
+**编辑器工具**（文件 `BoxProjectedCubemapTool.cs`，类名 `BoxProjectedCubemapDirection`）
+- `GameObject > BoxProjectedCubemapDirection_Copy` — 记录选中 GameObject 上的全部组件（`GetComponents<Component>()`）。
+- `GameObject > BoxProjectedCubemapDirection_Paste` — 从记录的组件中找出 `ReflectionProbeParam`，将其包围盒数据通过 `BoxProjectedCubemapDefine` 常量写入选中物件的 `sharedMaterial`；对每个目标 GameObject 独立处理，任一材质属性写入成功才标记 `dirty`。
 
 **关键约束**
 - Paste 前必须先 Copy，否则 `s_CopiedComponents` 为 null，Paste 静默跳过。
+- Copy 来源中若无 `ReflectionProbeParam` 组件，Paste 同样静默跳过。
 - 写入材质后调用 `EditorUtility.SetDirty` + `AssetDatabase.SaveAssets` 确保持久化。
+- `_UseBoxCubeRefl` 在 Paste 时被设置为 `1`（float），该属性不在 `BoxCubeReflInclude.hlsl` 的 `CBUFFER` 中，由 `BoxCubeRefl.shader` Properties 块单独声明。
+
+**HLSL Shader Include 链**
+
+```
+BoxCubeRefl.shader
+  └── BoxCubeReflForwardPass.hlsl
+        └── BoxCubeReflUtils.hlsl
+              └── BoxCubeReflInclude.hlsl   ← CBUFFER / sampler 声明根文件
+```
+
+- `BoxCubeReflInclude.hlsl`：`UnityPerMaterial` CBUFFER（`_MainTex_ST`、`_BoxCubeReflCenter/Min/Max`、`_BlendPercent`）与 `_MainTex` / `_ReflectionCube` 采样器。
+- `BoxCubeReflUtils.hlsl`：`BoxProjectedCubemapDirectionCustom()` — 将世界反射方向与盒体 AABB 射线求交，输出视差修正后的 cubemap 采样方向。
+- `BoxCubeReflForwardPass.hlsl`：URP Forward 顶点 / 片元着色器；片元阶段固定使用水平法线 `(0,1,0)` 计算反射，最终以 `_BlendPercent` 混合主贴图与反射颜色（`_BlendPercent→1` 趋向主贴图，`→0` 趋向反射）。
 
 ---
 
@@ -79,23 +112,35 @@ SunShaftsPass（ScriptableRenderPass）
       ├── Pass 2: DirectionalBlurShader    — 径向模糊（多次迭代）
       └── Pass 3: FinalBlendShader         — 强度/颜色/遮罩混合回场景
 
+SunShaftsDefine                          — Shader 名称/属性 ID/角度常量（集中定义）
 SunShafts（VolumeComponent）             — Volume Override 参数容器
 SunShaftsProperties                      — Feature Inspector 序列化参数
 SunShaftUtil                             — Material 懒加载工具（GetMaterial / GetShaderMaterial）
 ```
 
-**可见性裁剪规则**（`SunShaftsProperties`）
-- 摄像机前向与主光源方向夹角 > `CAN_VISIBLE_RENDER_LIGHT_ANGLE`（30°）时跳过渲染。
-- 摄像机前向与世界 Up 向量夹角 > `CAN_VISIBLE_RENDER_UP_ANGLE`（70°）时跳过渲染。
+**可见性裁剪规则**（角度常量定义在 `SunShaftsDefine`）
+- 摄像机前向与主光源方向夹角 > `SunShaftsDefine.s_CanVisibleRenderLightAngle`（30°）时跳过渲染。
+- 摄像机前向与世界 Up 向量夹角 > `SunShaftsDefine.s_CanVisibleRenderUpAngle`（70°）时跳过渲染。
 - `forceOn = true` 时绕过所有角度裁剪。
 
-**Shader 名称常量**（定义在 `SunShaftsFeatureV2`）
+**`SunShaftsDefine` 常量速查**
 
-```csharp
-BUILD_SKY_SHADER_NAME   = "SpaceTime/PostProcess/SunShaft/BuildSkyForBlurShader"
-BLUR_SHADER_NAME        = "SpaceTime/PostProcess/SunShaft/DirectionalBlurShader"
-FINAL_BLEND_SHADER_NAME = "SpaceTime/PostProcess/SunShaft/FinalBlendShader"
-```
+| 常量 | 类型 | 值 / 说明 |
+|------|------|-----------|
+| `s_BuildSkyShaderName` | `string` | `"SpaceTime/PostProcess/SunShaft/BuildSkyForBlurShader"` |
+| `s_BlurShaderName` | `string` | `"SpaceTime/PostProcess/SunShaft/DirectionalBlurShader"` |
+| `s_FinalBlendShaderName` | `string` | `"SpaceTime/PostProcess/SunShaft/FinalBlendShader"` |
+| `s_CommandBufferName` | `static readonly string` | `"ShaftsRendering"` |
+| `s_CanVisibleRenderLightAngle` | `static readonly float` | `30.0f` |
+| `s_CanVisibleRenderUpAngle` | `static readonly float` | `70.0f` |
+| `s_Shader_SunPosition_PropId` | `int` | `Shader.PropertyToID("_SunPosition")` |
+| `s_Shader_BlurStep_PropId` | `int` | `Shader.PropertyToID("_BlurStep")` |
+| `s_Shader_Intensity_PropId` | `int` | `Shader.PropertyToID("_Intensity")` |
+| `s_Shader_ShaftsColor_PropId` | `int` | `Shader.PropertyToID("_ShaftsColor")` |
+| `s_Shader_SunThresholdSky_PropId` | `int` | `Shader.PropertyToID("_SunThresholdSky")` |
+| `s_Shader_SkyNoiseScale_PropId` | `int` | `Shader.PropertyToID("_SkyNoiseScale")` |
+| `s_Shader_UseStencilMaskTex_PropId` | `int` | `Shader.PropertyToID("_UseStencilMaskTex")` |
+| `s_Shader_StencilMaskTex_PropId` | `int` | `Shader.PropertyToID("_StencilMaskTex")` |
 
 **Volume 参数快速参考**（`SunShafts` VolumeComponent）
 
@@ -134,6 +179,7 @@ FINAL_BLEND_SHADER_NAME = "SpaceTime/PostProcess/SunShaft/FinalBlendShader"
 |------|------|------|
 | 私有实例字段 | `m_` 前缀 + PascalCase | `m_ShaftsPass`, `m_ReflProbe` |
 | 私有/内部静态字段 | `s_` 前缀 + PascalCase | `s_CopiedComponents` |
+| 公共/内部静态字段（`static readonly`） | `s_` 前缀 + PascalCase | `s_CanVisibleRenderLightAngle`, `s_BuildSkyShaderName` |
 | 公共方法 | PascalCase | `Create`, `AddRenderPasses`, `GetMaterial` |
 | 命名空间 | 效果通用 `ST.Effect`；URP 相关 `ST.Effect.URP` | — |
 

@@ -170,4 +170,10 @@ SunShaftsProperties                   — Feature Inspector 参数
 
 ---
 
+## 延伸阅读
+
+- [SunShaft 实现原理](SunShaftPrinciple.md) — Shader 逐步分析、噪声算法、模糊策略、参数公式对照
+
+---
+
 [← 返回主页](../../README.md)

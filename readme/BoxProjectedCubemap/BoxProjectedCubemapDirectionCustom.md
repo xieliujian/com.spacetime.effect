@@ -4,92 +4,236 @@
 
 ---
 
-## 一文读懂：它到底在修什么
+## 先说问题：为什么反射会「错位」
 
-想象你在**方形房间里**看一面**光滑的地板**或墙面：真实世界里，你站在不同位置、看向镜面时，**反射里的柱子、门洞位置会跟着变**。
+反射探针把房间的样貌**从探针中心**拍成一张 Cubemap。
 
-但 GPU 用 **反射探针 + Cubemap** 时，图像是**从探针中心**「拍」出来的：若采样时**只用镜面反射方向**、不管你现在站在房间哪里，大家看到的反射会像**同一台摄像机拍的壁纸**——[Catlike Coding《Rendering 8》](https://catlikecoding.com/unity/tutorials/rendering/part-8/) 里说的：**对无穷远环境可以近似，对近处墙面、地板的反射会错位**。
+采样时，GPU 需要一个**方向向量**，去 Cubemap 里查「这个方向上看到什么」。最直接的做法是直接用**镜面反射方向**（`reflect(视线, 法线)`）去查。
 
-**盒投影（Box Projection）** 就是一招便宜修正：**用与房间对齐的 AABB 盒子**，在算 Cubemap 采样方向时，假装「从当前像素沿反射线先碰到哪一面墙」，用这一几何关系去**改**传给 `texCUBE` 的向量。  
-`BoxProjectedCubemapDirectionCustom` 做的事，与教程里自写的 `BoxProjection`、以及 Unity 内置的 `BoxProjectedCubemapDirection` **数学上一类**，只是用 **中心 + min/max** 表达，便于和本项目的 `ReflectionProbe` 数据对齐。
+这在环境很远时没问题——远处的山、天空，站在房间哪个角度看反射都差不多。  
+但在**室内近距离**场景（地板、墙面）就会出错：
 
-实现代码：[`BoxCubeReflUtils.hlsl`](../../Shaders/BoxProjectedCubemap/BoxCubeReflUtils.hlsl)。
+```
+你的位置（★） 和 探针中心（●） 不同
 
----
+★                   ●
+│                   │
+│ ← 你的反射方向    │ ← 探针拍图时的方向
+│                   │
+└── 地板 ───────────┘
 
-## 从《Rendering 8》看三条递进关系
-
-| 阶段 | 教程在讲什么 | 和我们函数的关系 |
-|------|----------------|------------------|
-| 环境映射 | 用 3D **方向** 去 Cubemap 里取色；有 HDR / mip 等细节 | 我们最终产出的就是「该往哪指」的向量，再交给 `texCUBElod` |
-| 反射不是画皮肤 | 要用 **`reflect(视线, 法线)`** 当方向，而不是用普通法线当方向 | 方向由 **调用方** 传入（如 `BoxCubeReflForwardPass`）；盒投影**不管**法线从哪来 |
-| Box Projection | 在**与 Cubemap 对齐的矩形空间**里，用射线与**盒面**的交点来改采样方向 | 本函数 = 这段几何在工程里的一个实现变体 |
-
-教程原文要点（意译）：
-
-- 只放一个探针时，**所有球体反射像站在探针中心**，地板镜子则 **位置、尺度都不对**。
-- 若环境**很远**，可以当作无穷远，不必在意观察点；**墙、地板离得近**就要管观察点。
-- 空立方体房间里，从任意表面点、沿反射方向，射线会与**某一面墙/顶/地**先相交；用 **从房间中心指向该交点** 的向量去采样 Cubemap，就能对齐。
-
-> 更完整的叙事与动图见：[Rendering 8 — Box Projection](https://catlikecoding.com/unity/tutorials/rendering/part-8/) 中 **《Box Projection》** 整节（含 *Reflection Probe Box*、*Adjusting the Sample Direction*）。
-
----
-
-## 直观模型：三句话
-
-1. 已知：**当前像素世界坐标** `worldPos`、**归一化反射方向** `nrdir`、**盒子**的 `min/max` 与**探针中心** `cubemapCenter`（与 [ReflectionProbe 的盒范围](https://catlikecoding.com/unity/tutorials/rendering/part-8/) 同构）。
-2. 沿 `nrdir` 从 `worldPos` 射出一条射线，在 **x、y、z 三个方向** 上分别算「若只沿这个方向走，**最先撞到 max 面还是 min 面**」对应的**参数 t**；三个 t 里取**最小**的那个 `fa`（**最先**碰到的就是盒子的**那堵墙**）。
-3. 把 `worldPos` 挪到**以 `cubemapCenter` 为原点**，再加上沿反射方向走 `fa` 的位移，得到一个新向量，用作 Cubemap 采样方向——这样反射才跟「人站在盒子里」一致。
-
-**比喻**：在走廊里用激光笔照天花板，**先打到哪块板**由三个方向里**最短有效路程**决定；`fa` 就是这段路程。教程里也强调：**选最小的标量，对应最近的那张边界**（*which bounds face is closest*）。
-
----
-
-## 和 Catlike 教程公式的同一件事
-
-教程里在归一化方向之后，写成（逻辑等价于下面三行；变量名与 Unity 原稿一致）：
-
-```hlsl
-float3 factors = ((direction > 0 ? boxMax : boxMin) - position) / direction;
-float scalar = min(min(factors.x, factors.y), factors.z);
-return direction * scalar + (position - cubemapPosition);
+两个方向一样，但你在左边，探针在中间。
+你看到的反射应该偏右，但 Cubemap 给的是"中间视角"。
 ```
 
-本项目的写法（`boolDir` 与 `rbmax`/`rbmin` 的混合）是**同一公式的分步**：
-
-- `rbmax` / `rbmin` 对应 `boxMax` / `boxMin` 与 `worldPos` 在 **各轴上** 除 `nrdir` 得到的候选 t；
-- `boolDir` 在每一轴上选「沿正方向用 max 界、负方向用 min 界」——与三目 `direction > 0 ? boxMax : boxMin` 相同；
-- `fa` = 三个轴候选 t 的 **min**，即教程里的 `scalar`；
-- 最后 `worldPos -= cubemapCenter` 再 `+ nrdir * fa`，与 `direction * scalar + (position - cubemapPosition)` **代数一致**（`direction` 与 `nrdir` 在实现里会先做 `normalize`）。
-
-教程还说明：**Cubemap 采样不必强制归一化方向**，因为硬件本质也是**按方向找面再插值**；我们仍对反射方向做 `normalize`，与常见 URP/内置写法一致。参见教程 *Doesn't the new direction have to be normalized?* 一节。
-
-#### 分母为零怎么办？
-
-与教程 *What happens when one of the divisions is by zero?* 一致：某一轴分量为 0 时，该轴除法会出问题，但 **不会进入 `min` 的「胜出」结果**（无效值在比较里被排掉），工程上可接受；若你移植到**任意** `worldPos`，更稳妥的做法是加极小 ε，本仓库保持与原始算法一致。
+结果就是：**无论你走到房间哪里，地板反射永远像同一张贴图，不会随位置变化**。
 
 ---
 
-## 与主文档、示例 Shader 的衔接
+## 修正思路：改用「交点方向」
 
-- 工具流、**`_BoxCubeReflCenter` 等** 与 Copy/Paste：见 [盒子投影 Cubemap](BoxProjectedCubemap.md)。  
-- 片元里**固定水平法线**等简化：见 [`BoxCubeReflForwardPass.hlsl`](../../Shaders/BoxProjectedCubemap/BoxCubeReflForwardPass.hlsl)；**盒投影**与**法线从哪来**是两层问题，可替换为法线贴图/几何法线。  
-- 教程提醒：**反射面不要超出探针盒太多**，否则盒投影的近似会破功——布置探针时把 **Box 调到包住可见反射区域** 仍是前提。
+真实世界里，镜子反射的原理是：
+
+> 你的视线沿反射方向打出去，**打到了哪面墙**，你就看到那面墙上探针拍到的图像。
+
+所以正确的采样方向不是「反射方向」本身，而是：
+
+> **从探针中心，指向「反射光线打到的那面墙」的方向**
+
+```
+★ = 你的位置     ● = 探针中心     × = 反射光线打到的墙
+
+        ×
+       /  ← 正确采样方向（● → ×）
+      /
+     ★
+      \
+       ← 错误采样方向（直接用反射方向，像从 ● 出发）
+```
+
+`BoxProjectedCubemapDirectionCustom` 做的事就是：
+
+1. 从当前像素出发，沿反射方向，**找到它打到盒子哪一面墙**
+2. 把「探针中心 → 交点」这个向量**交给 Cubemap 采样**
 
 ---
 
-## 局限（教程也强调）
+## 核心数学：射线打到哪面墙？
 
-- 最适合 **与轴对齐的矩形房间**；圆柱、曲面墙需要别的表示。  
-- **单一探针** 只能在一个盒近似下正确；大场景要 **多探针混合**（教程后半 *Blending Reflection Probes*），那是另一条管线，不在这个函数里。  
-- 探针**从某高度拍地板**，地板会映出**不该出现的一块地板**等——要调 **探针原点在盒内的位置** 折中，见 [Rendering 8](https://catlikecoding.com/unity/tutorials/rendering/part-8/)  *Lowered probe center* 等图。
+### 第一步：给射线写方程
+
+从像素出发，沿反射方向走一段距离 `t`，到达的点是：
+
+```
+命中点 = worldPos + t × nrdir
+```
+
+其中 `nrdir` 是归一化的反射方向。`t` 是我们要求的「走了多远」。
+
+### 第二步：对每个轴算到达各面墙的 `t`
+
+房间用 AABB 盒子表示，有 6 面墙（x/y/z 各两面）。  
+对 **x 轴**来说，有 `boxMin.x` 和 `boxMax.x` 两面墙：
+
+```
+命中点.x = worldPos.x + t × nrdir.x = boxMin.x 或 boxMax.x
+
+解出 t：
+    t_xMin = (boxMin.x - worldPos.x) / nrdir.x
+    t_xMax = (boxMax.x - worldPos.x) / nrdir.x
+```
+
+这两行对应代码中的：
+
+```hlsl
+half3 rbmin = (boxMin.xyz - worldPos) / nrdir;   // 三轴各自到 min 面的 t
+half3 rbmax = (boxMax.xyz - worldPos) / nrdir;   // 三轴各自到 max 面的 t
+```
+
+此时我们有 6 个候选 t 值（x/y/z × min/max）。
+
+### 第三步：排除走反方向的面
+
+光线沿 `nrdir` 方向走，`t > 0` 才是前方的墙。  
+但不需要显式判断 `t > 0`，只需根据方向符号**选对那面墙**：
+
+- 若 `nrdir.x > 0`（往正 x 走），前方是 `boxMax.x`，用 `t_xMax`
+- 若 `nrdir.x < 0`（往负 x 走），前方是 `boxMin.x`，用 `t_xMin`
+
+```hlsl
+half3 boolDir  = (nrdir > 0.0f);                        // 分量 > 0 则为 1，否则为 0
+half3 rbminmax = boolDir * rbmax + (1 - boolDir) * rbmin; // 正方向选 max，负方向选 min
+```
+
+每一轴都选出了「前方那面墙」对应的 `t`，共得到 3 个候选值（x、y、z 各一个）。
+
+### 第四步：取最小的 `t`——最先碰到的墙
+
+射线先到哪面墙，就取哪面墙。三个候选 `t` 里最小的，对应最先命中的那面：
+
+```hlsl
+half fa = min(min(rbminmax.x, rbminmax.y), rbminmax.z);
+```
+
+**例子**——假设你站在房间中偏左下角，往右上方向照射：
+
+```
+t_x = 3.0   （要走 3 才到右墙）
+t_y = 1.5   （要走 1.5 才到天花板）  ← 最小，先打到天花板
+t_z = 5.0   （要走 5 才到前墙）
+
+fa = 1.5
+```
+
+### 第五步：算「探针中心 → 交点」的向量
+
+交点的世界坐标：
+
+```
+交点 = worldPos + nrdir × fa
+```
+
+我们要的是从**探针中心指向交点**的向量：
+
+```
+采样方向 = 交点 - cubemapCenter
+         = (worldPos - cubemapCenter) + nrdir × fa
+```
+
+代码把这两步合在一起写：
+
+```hlsl
+worldPos -= cubemapCenter.xyz;       // worldPos 变成"相对探针中心的偏移"
+worldRefl = worldPos + nrdir * fa;   // 偏移 + 沿反射方向走到墙，即为采样向量
+```
 
 ---
 
-## 延伸阅读
+## 完整代码逐行注释
 
-- **主教程**（从天空盒、反射到盒投影的完整线）：[Catlike Coding — Unity Rendering, Part 8, Reflections](https://catlikecoding.com/unity/tutorials/rendering/part-8/)  
-- 本包流程与 API：[盒子投影 Cubemap](BoxProjectedCubemap.md)
+```hlsl
+half3 BoxProjectedCubemapDirectionCustom(
+    half3  worldRefl,       // 表面的镜面反射方向（未归一化）
+    float3 worldPos,        // 当前像素的世界坐标
+    float4 cubemapCenter,   // 反射探针中心（世界坐标）
+    float4 boxMin,          // AABB 最小角（世界坐标）
+    float4 boxMax)          // AABB 最大角（世界坐标）
+{
+    half3 nrdir = normalize(worldRefl);
+    // 归一化反射方向，确保后面 t 的计算单位一致
+
+    half3 rbmax = (boxMax.xyz - worldPos) / nrdir;
+    half3 rbmin = (boxMin.xyz - worldPos) / nrdir;
+    // 每个轴：从 worldPos 到 max/min 面，需要走多少步 t
+    // 正数 = 前方，负数 = 背后（已被下一步过滤）
+
+    half3 boolDir  = (nrdir > 0.0f);
+    half3 rbminmax = boolDir * rbmax + (1 - boolDir) * rbmin;
+    // 按方向选「前方那面墙」：
+    //   往正方向走 → 选 max 面
+    //   往负方向走 → 选 min 面
+
+    half fa = min(min(rbminmax.x, rbminmax.y), rbminmax.z);
+    // 三轴里最先到达的那面墙，对应最小的 t
+
+    worldPos -= cubemapCenter.xyz;
+    worldRefl = worldPos + nrdir * fa;
+    // 采样向量 = 从探针中心指向交点
+    //          = (worldPos - center) + nrdir × fa
+
+    return worldRefl;
+}
+```
+
+---
+
+## 用一张图串联全过程
+
+```
+世界坐标系俯视图（Y 轴朝上，看 XZ 平面）
+
+       boxMin.z ──────────────── boxMax.z
+          │                          │
+boxMin.x  │       ●（探针中心）       │  boxMax.x
+          │                          │
+          │         ★（像素位置）     │
+          │          ↗ nrdir          │
+          │         /                │
+          │        /                 │
+          └───────×──────────────────┘
+                  ↑ 交点（射线打到的那面墙）
+
+采样方向 = ● → × = (★ - ●) + nrdir × fa
+```
+
+探针中心 `●` 拍到的 Cubemap 里，`× 方向`对应的像素，就是这个像素该看到的反射内容。
+
+---
+
+## 与「直接用反射方向」的对比
+
+| | 直接用反射方向 | 盒投影修正 |
+|---|---|---|
+| 采样向量起点 | 隐含为探针中心 | 显式算出，考虑了像素位置 |
+| 采样向量 | `nrdir`（固定） | `(worldPos - center) + nrdir × fa`（随位置变化） |
+| 效果 | 像贴纸，位置不变 | 随观察位置变化，反射正确跟移 |
+| 适用场景 | 天空、远山等 | 室内地板、墙面、近处物体 |
+
+---
+
+## 分母为零的情况
+
+当 `nrdir` 某一轴分量为 0（反射方向平行于该轴的两面墙），除法会产生 `±Inf`。  
+`±Inf` 不会是 `min` 的胜者（`min(1.5, +Inf) = 1.5`），所以**被自动排除**，不影响最终结果。  
+这是 HLSL 浮点数规范保障的行为，无需额外处理。
+
+---
+
+## 局限
+
+- 只适合 **轴对齐的矩形空间**；弧形墙、圆柱形房间需要其他交叉测试。
+- **单探针**只能覆盖一个盒子；大场景需要多个探针混合过渡。
+- 探针盒范围应**紧密包裹**反射可见区域，若反射面明显超出盒子边界，修正会失效。
 
 ---
 

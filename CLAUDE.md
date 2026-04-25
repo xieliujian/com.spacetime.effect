@@ -42,7 +42,9 @@ com.spacetime.effect/
 │   └── Shaders.cs                   命名空间占位符
 └── readme/
     ├── BoxProjectedCubemap/BoxProjectedCubemap.md
-    └── SunShaft/SunShaft.md
+    ├── BoxProjectedCubemap/BoxProjectedCubemapDirectionCustom.md
+    ├── SunShaft/SunShaft.md
+    └── SunShaft/SunShaftPrinciple.md
 ```
 
 ### Assembly Structure

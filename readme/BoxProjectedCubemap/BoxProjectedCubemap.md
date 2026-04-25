@@ -13,7 +13,7 @@
 
 ## 展示效果
 
-![效果预览](Video/BoxProjectedCubemap.png)
+![效果预览](tex/BoxProjectedCubemap.png)
 
 ---
 
@@ -23,7 +23,7 @@
 
 在场景中创建一个 `ReflectionProbe`，包裹住整个场景，拍照生成 CubeMap。
 
-![Demo 示例](Video/Demo1.png)
+![Demo 示例](tex/Demo1.png)
 
 ### 第二步：复制 ReflectionProbe 参数
 

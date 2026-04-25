@@ -8,7 +8,7 @@
 
 ## 展示效果
 
-![效果预览](https://github.com/xieliujian/com.spacetime.effect/blob/main/Doc/SunShaft/Video/1.png?raw=true)
+![效果预览](Video/SunShaft_EffectPreview.png)
 
 ---
 
@@ -60,7 +60,7 @@ SunShaft 效果分三个 Pass 顺序执行：
 
 从当前帧的场景深度缓冲区中提取天空区域，仅保留靠近太阳位置的像素，叠加噪声扰动增强自然感。
 
-![步骤一](https://github.com/xieliujian/com.spacetime.effect/blob/main/Doc/SunShaft/Video/2.png?raw=true)
+![步骤一](Video/SunShaft_Pass1_SampleSkyRays.png)
 
 ```hlsl
 float4 frag(Varyings input) : SV_Target
@@ -88,7 +88,7 @@ float4 frag(Varyings input) : SV_Target
 
 以太阳屏幕坐标为中心，对 Pass 1 结果进行多次偏移采样叠加，产生向太阳方向延伸的光轴拖影。
 
-![步骤二](https://github.com/xieliujian/com.spacetime.effect/blob/main/Doc/SunShaft/Video/3.png?raw=true)
+![步骤二](Video/SunShaft_Pass2_RadialBlur.png)
 
 ```hlsl
 float4 frag(Varyings input) : SV_Target
@@ -112,7 +112,7 @@ float4 frag(Varyings input) : SV_Target
 
 将径向模糊结果乘以强度和颜色，可选地通过模板遮罩纹理控制投影范围，最终叠加到场景颜色上。
 
-![步骤三](https://github.com/xieliujian/com.spacetime.effect/blob/main/Doc/SunShaft/Video/4.png?raw=true)
+![步骤三](Video/SunShaft_Pass3_SceneBlend.png)
 
 ```hlsl
 float4 frag(Varyings input) : SV_Target

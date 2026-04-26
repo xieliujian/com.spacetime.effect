@@ -17,6 +17,11 @@ namespace ST.Effect.URP
         /// <summary>
         /// 
         /// </summary>
+        ScriptableRenderer m_Renderer;
+
+        /// <summary>
+        /// 
+        /// </summary>
         RenderTargetIdentifier m_Source;
 
         /// <summary>
@@ -64,10 +69,21 @@ namespace ST.Effect.URP
         /// <summary>
         /// 
         /// </summary>
-        public void Setup(RenderTargetIdentifier source, RenderTargetHandle destination)
+        public void Setup(ScriptableRenderer renderer, RenderTargetHandle destination)
         {
-            m_Source = source;
+            m_Renderer = renderer;
             m_Destination = destination;
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
+        {
+            if (m_Renderer == null)
+                return;
+
+            m_Source = m_Renderer.cameraColorTarget;
         }
 
         /// <summary>

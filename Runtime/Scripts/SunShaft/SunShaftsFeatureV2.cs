@@ -60,8 +60,7 @@ namespace ST.Effect.URP
             if (camera.cameraType == CameraType.Reflection || camera.cameraType == CameraType.Preview)
                 return;
 
-            RenderTargetIdentifier cameraColorTarget = renderer.cameraColorTarget;
-            m_ShaftsPass.Setup(cameraColorTarget, RenderTargetHandle.CameraTarget);
+            m_ShaftsPass.Setup(renderer, RenderTargetHandle.CameraTarget);
             renderer.EnqueuePass(m_ShaftsPass);
         }
     }

@@ -81,7 +81,7 @@ namespace ST.Effect
                 buttonWidth,
                 buttonHeight);
 
-            if (GUI.Button(buttonRect, "切换效果", buttonStyle))
+            if (GUI.Button(buttonRect, "Switch Effect", buttonStyle))
             {
                 SwitchEff();
             }

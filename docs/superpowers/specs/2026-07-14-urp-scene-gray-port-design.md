@@ -71,7 +71,8 @@ Editor 与 Runtime 同命名空间，与 `BoxProjectedCubemapTool` 一致。
 - 去掉源码中空的 `Start` / `Update` 与无用 using
 - 成员顺序：私有字段 → 公有方法 → 系统回调（`OnGUI`）
 - 继续使用 `sharedProfile`（与源 Demo 行为一致）
-- 空引用早退；不引入新的日志依赖
+- 空引用早退范围与源一致：`Volume == null`、`TryGet<ColorAdjustments>` 失败时直接 return；不额外发明守卫，不引入新的日志依赖
+- 保留 `OnGUI` 文案「运行时查看效果」（Demo 对等；不删除）
 
 ### `UrpSceneGrayEditor`（CustomEditor）
 

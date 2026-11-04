@@ -1,6 +1,6 @@
 # 盒子投影 Cubemap
 
-[← 返回主页](../../README.md) · [BoxProjectedCubemapDirectionCustom 原理分析](BoxProjectedCubemapDirectionCustom.md)
+[← 返回主页](../../README.md) · [BoxProjectedCubemapDirectionCustom 原理分析](BoxProjectedCubemapDirectionCustom.md) · [片元级视线方向修正记录](片元级视线方向修正记录.md)
 
 适用于矩形场景的 Cubemap 盒子投影效果，能对墙壁上的门、窗、画等物件产生正确的反射投影。
 
@@ -67,7 +67,7 @@ GameObject > BoxProjectedCubemapDirection_Paste
 
 ```hlsl
 // worldRefl    — 反射向量
-// worldPos     — 顶点世界空间位置
+// worldPos     — 当前片元的世界空间位置
 // cubemapCenter — 盒子投影中心
 // boxMin       — 包围盒最小点
 // boxMax       — 包围盒最大点
@@ -107,6 +107,7 @@ half3 BoxProjectedCubemapDirectionCustom(half3 worldRefl, float3 worldPos,
 ## 参考资料
 
 - [BoxProjectedCubemapDirectionCustom 原理分析](BoxProjectedCubemapDirectionCustom.md)（算法逐步说明）
+- [片元级视线方向修正记录](片元级视线方向修正记录.md)（顶点归一化后插值的误差与正确写法）
 - [Catlike Coding - Rendering Part 8（第三章）](https://catlikecoding.com/unity/tutorials/rendering/part-8/)
 
 ---
